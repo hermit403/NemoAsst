@@ -1,0 +1,31 @@
+ARG BASE_IMAGE_URL=nvcr.io/nvidia/base/ubuntu
+ARG BASE_IMAGE_TAG=22.04_20240212
+ARG UV_VERSION=0.5.31
+ARG PYTHON_VERSION=3.12
+
+FROM --platform=$TARGETPLATFORM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv_base
+
+FROM --platform=$TARGETPLATFORM ${BASE_IMAGE_URL}:${BASE_IMAGE_TAG} AS backend
+ARG PYTHON_VERSION
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/workspace/.venv/bin:$PATH"
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl git gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    apt-get clean && update-ca-certificates
+
+COPY --from=uv_base /uv /uvx /bin/
+
+WORKDIR /workspace
+
+RUN --mount=type=cache,id=uv_cache_backend,target=/root/.cache/uv,sharing=locked \
+    uv venv --python ${PYTHON_VERSION} /workspace/.venv
+
+    EXPOSE 8001 6000
+
+    CMD ["/bin/bash", "/workspace/docker/start_backend.sh"]

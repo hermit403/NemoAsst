@@ -1,0 +1,234 @@
+general:
+  use_uvloop: t
+
+functions:
+  tavily_search:
+    _type: tavily_internet_search
+    description: "使用Tavily API进行实时网络搜索"
+    max_results: 5
+  
+  current_datetime:
+    _type: current_datetime
+    description: "获取当前日期和时间"
+  
+  code_executor:
+    _type: code_execution
+    description: "执行Python代码进行本地文件读取、分析和处理。可以访问D盘等本地文件系统，进行安全检查、代码审查等DevSecOps任务"
+  
+  github_file_getter:
+    _type: github_getfile
+    description: "读取文件内容的工具，支持查看文件详情"
+    repo_name: "local"
+    timeout: 300
+  
+  github_file_lines:
+    _type: github_getfilelines
+    description: "按行读取文件内容，便于精确定位和编辑特定行"
+    repo_name: "local"
+    timeout: 300
+
+  filesystem_mcp:
+    _type: mcp_client
+    description: "通过MCP协议访问文件系统操作：读写文件、创建目录、移动复制文件等"
+    server:
+      transport: stdio
+      command: "node"
+      args: ["../mcps/filesystem-mcp-server/dist/index.js"]
+      env:
+        MCP_LOG_LEVEL: "info"
+        LOGS_DIR: "./logs"
+        NODE_ENV: "development"
+        MCP_TRANSPORT_TYPE: "stdio"
+        FS_BASE_DIRECTORY: ".."
+
+  # Docker MCP Server Integration
+  docker_mcp:
+    _type: mcp_client
+    description: "通过MCP协议管理Docker容器、镜像、网络和卷：创建、运行、停止容器等"
+    server:
+      transport: stdio
+      command: "python"
+      args: ["../mcps/mcp-server-docker/main.py"]
+      env:
+        MCP_LOG_LEVEL: "info"
+        MCP_TRANSPORT_TYPE: "stdio"
+
+  # Security MCP Tools Integration  
+  security_mcp:
+    _type: mcp_client
+    description: "安全检测工具集"
+    server:
+      transport: stdio
+      command: "node"
+      args: ["../mcps/mcp-for-security/http-headers-security-mcp/build/index.js"]
+      env:
+        MCP_LOG_LEVEL: "info"
+        MCP_TRANSPORT_TYPE: "stdio"
+
+  # Certificate Search MCP Integration
+  cert_search_mcp:
+    _type: mcp_client  
+    description: "证书透明度搜索：通过SSL证书日志发现子域名和证书信息"
+    server:
+      transport: stdio
+      command: "node"
+      args: ["../mcps/mcp-for-security/crt-search-simple/build/index.js"]
+      env:
+        MCP_LOG_LEVEL: "info" 
+        MCP_TRANSPORT_TYPE: "stdio"
+
+  # Nmap Network Scanner MCP Integration
+  nmap_mcp:
+    _type: mcp_client
+    description: "网络扫描工具：端口扫描、服务发现、OS检测等网络安全评估功能"
+    server:
+      transport: stdio
+      command: "node"
+      args: ["../mcps/mcp-for-security/nmap-mcp/build/index.js", "nmap"]
+      env:
+        MCP_LOG_LEVEL: "info"
+        MCP_TRANSPORT_TYPE: "stdio"
+
+  # Nuclei Vulnerability Scanner MCP Integration  
+  nuclei_mcp:
+    _type: mcp_client
+    description: "漏洞扫描器：基于YAML模板的快速漏洞检测，支持CVE、配置错误等安全问题发现"
+    server:
+      transport: stdio
+      command: "node"
+      args: ["../mcps/mcp-for-security/nuclei-simple/build/index.js", "nuclei"]
+      env:
+        MCP_LOG_LEVEL: "info"
+        MCP_TRANSPORT_TYPE: "stdio"
+  
+llms:
+  # 默认使用ModelScope API (可修改)
+  default_llm:
+    _type: openai
+    model_name: "Qwen/Qwen3-235B-A22B-Thinking-2507"
+    api_key: ""
+    base_url: "https://api-inference.modelscope.cn/v1"
+    temperature: 0.75
+    max_tokens: 4096
+
+workflow:
+  _type: react_agent
+  tool_names:
+    - tavily_search
+    - current_datetime
+    - code_executor
+    - github_file_getter
+    - github_file_lines
+    # Filesystem MCP tools (exposed by mcp_client)
+    - read_file
+    - write_file
+    - update_file
+    - list_files
+    - delete_file
+    - delete_directory
+    - create_directory
+    - move_path
+    - copy_path
+    - set_filesystem_default
+    # Docker MCP tools (exposed by mcp_client)
+    - list_containers
+    - create_container
+    - run_container
+    - recreate_container
+    - start_container
+    - stop_container
+    - remove_container
+    - fetch_container_logs
+    - list_images
+    - pull_image
+    - push_image
+    - build_image
+    - remove_image
+    - list_networks
+    - create_network
+    - remove_network
+    - list_volumes
+    - create_volume
+    - remove_volume
+    # Security MCP tools (exposed by mcp_client)
+    - analyze-http-header
+    # Certificate Search MCP tools (exposed by mcp_client)
+    - search-certificates
+    # Nmap Network Scanner MCP tools (exposed by mcp_client)
+    - do-nmap
+    # Nuclei Vulnerability Scanner MCP tools (exposed by mcp_client)
+    - scan-with-nuclei
+  llm_name: default_llm
+  verbose: true
+  parse_agent_response_max_retries: 3
+  max_iterations: 10
+  system_prompt: |
+    你是一名DevSecOps专家AI助手，利用可用工具帮助用户解决问题。
+    - 当你已经得到足够信息得出答案，必须输出一行以“Final Answer:”开头的最终回答，并且结束对话。
+    - 输出 Final Answer 后不得再输出任何 Thought/Action/Observation。
+    - 如果无需调用工具即可回答，也直接输出 Final Answer。
+    - 如果需要调用工具，以下是可用工具说明：
+    
+    1. **文件系统操作工具**：
+       - read_file - 读取文件：{{"path": "文件路径"}}
+       - write_file - 写入文件：{{"path": "文件路径", "content": "内容"}}
+       - update_file - 更新文件：{{"path": "文件路径", "content": "新内容"}}
+       - list_files - 列出目录：{{"directory": "目录路径"}}
+       - delete_file - 删除文件：{{"path": "文件路径"}}
+       - delete_directory - 删除目录：{{"path": "目录路径"}}
+       - create_directory - 创建目录：{{"path": "目录路径"}}
+       - move_path - 移动文件/目录：{{"source": "源路径", "destination": "目标路径"}}
+       - copy_path - 复制文件/目录：{{"source": "源路径", "destination": "目标路径"}}
+       - set_filesystem_default - 设置文件系统默认目录：{{"path": "默认目录路径"}}
+
+    2. **Docker容器管理工具**：
+       - list_containers - 列出容器：{{"all": true}}
+       - create_container - 创建容器：{{"image": "镜像名", "name": "容器名"}}
+       - run_container - 运行容器：{{"image": "镜像名", "command": "可选命令"}}
+       - recreate_container - 重新创建容器：{{"container_id": "容器ID"}}
+       - start_container - 启动容器：{{"container_id": "容器ID"}}
+       - stop_container - 停止容器：{{"container_id": "容器ID"}}
+       - remove_container - 删除容器：{{"container_id": "容器ID"}}
+       - fetch_container_logs - 获取容器日志：{{"container_id": "容器ID"}}
+       - list_images - 列出镜像：{{}}
+       - pull_image - 拉取镜像：{{"image": "镜像名:标签"}}
+       - push_image - 推送镜像：{{"image": "镜像名:标签"}}
+       - build_image - 构建镜像：{{"path": "Dockerfile路径", "tag": "镜像标签"}}
+       - remove_image - 删除镜像：{{"image": "镜像ID或名称"}}
+       - list_networks - 列出网络：{{}}
+       - create_network - 创建网络：{{"name": "网络名"}}
+       - remove_network - 删除网络：{{"network_id": "网络ID"}}
+       - list_volumes - 列出卷：{{}}
+       - create_volume - 创建卷：{{"name": "卷名"}}
+       - remove_volume - 删除卷：{{"volume_name": "卷名"}}
+
+    3. **安全分析工具**：
+       - analyze-http-header - HTTP安全头分析：{{"target": "https://目标网站.com"}}
+       - search-certificates - 证书透明度搜索：{{"domain": "example.com", "includeCertDetails": false}}
+       - do-nmap - 网络端口扫描：{{"target": "192.168.1.1", "nmap_args": ["-sS", "-p", "80,443,22"]}}
+       - scan-with-nuclei - 漏洞扫描：{{"target": "https://example.com", "tags": ["cve", "sqli"], "severity": ["high", "critical"]}}
+
+    4. **其他工具**：
+       - tavily_search - 网络搜索
+       - current_datetime - 获取时间
+       - code_executor - 在沙盒中执行Python代码
+       - github_file_getter/github_file_lines - GitHub文件操作
+
+    重要提示：
+    - 直接使用具体的工具名称（如 read_file, current_datetime）
+    - 不要使用 filesystem_mcp 作为工具名称，在读取目录文件时需要先设置工作目录
+    - 始终使用正确的JSON参数格式，确保正确调用工具
+    - 优先使用MCP工具而非code_executor
+    - 不要做多余的事情，多次调用工具失败时，请结合已有信息先做出总结并回复，务必与用户的问题相关
+
+    工具列表：{tool_names}
+    
+    可用工具：{tools}
+
+    请严格按照ReAct格式回应：
+    Thought: 分析问题并选择合适的工具
+    Action: 工具名称
+    Action Input: JSON格式的参数
+    Observation: [工具输出]
+
+    完成任务后总结并给出最终答案。

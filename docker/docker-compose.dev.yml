@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+      args:
+        PYTHON_VERSION: "3.12"
+    image: aiqtoolkit/backend:dev
+    working_dir: /workspace
+    environment:
+      # LLM / Tavily keys (override via .env)
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      # Expose to NAT runtime as needed
+      - MCP_LOG_LEVEL=${MCP_LOG_LEVEL:-info}
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["/bin/bash", "/workspace/docker/start_backend.sh"]
+    ports:
+      - "8001:8001"
+      - "6000:6000"
+
+  ui:
+    image: node:18-slim
+    working_dir: /workspace/external/aiqtoolkit-opensource-ui
+    volumes:
+      - ..:/workspace
+    environment:
+      - NEXT_PUBLIC_API_BASE=http://localhost:8001
+      - NODE_ENV=development
+    command: ["bash", "-lc", "npm ci && npm run dev"]
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+networks:
+  default:
+    name: aiqtoolkit-dev

@@ -1,0 +1,5 @@
+# DevSecOps AI Agent MCP服务器列表
+- **[filesystem](https://github.com/cyanheads/filesystem-mcp-server)** ✅ - 本地文件系统 (10个工具: read_file, write_file, update_file, list_files, delete_file, delete_directory, create_directory, move_path, copy_path, set_filesystem_default) - 已迁移至 mcps/filesystem-mcp-server
+- **[mcp-server-docker](https://github.com/ckreiling/mcp-server-docker)** ✅ - Docker容器管理 (16个工具: list_containers, create_container, run_container, start_container, stop_container, remove_container, fetch_container_logs, list_images, pull_image, build_image, remove_image, list_networks, create_network, remove_network, list_volumes, create_volume, remove_volume)
+- **[mcp-for-security](https://github.com/cyproxio/mcp-for-security)** ✅ - MCP安全工具，使用Docker (4个工具已集成: analyze-http-header, search-certificates, do-nmap, scan-with-nuclei) - HTTP安全头分析、证书透明度搜索、网络扫描、漏洞检测
+- **[IDA-pro-mcp](https://github.com/mrexodia/ida-pro-mcp)** ✅ - IDA Pro逆向分析(48个工具，用于对本地二进制程序进行AI分析)
