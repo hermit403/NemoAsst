@@ -1,6 +1,6 @@
-# 基于 NVIDIA NeMo Agent Toolkit 的Windows下的安全开发助手
+# NemoAsst - 基于 NVIDIA NeMo Agent Toolkit 的安全开发助手
 
-本项目基于NVIDIA官方NeMo Agent Toolkit及其前端示例，使用阿里云百炼/ModelScope API调用**qwen3-235b-a22b-thinking-2507**作为基模型，接入了数个MCP，用于辅助本地安全开发。
+本项目基于NVIDIA官方NeMo Agent Toolkit及其前端示例，使用阿里云百炼/ModelScope API调用**qwen3-235b-a22b-thinking-2507**作为基模型，接入了数个MCP，用于辅助本地安全开发。你可以快速跑通一个能联网、能与本地环境交互的Webui，用于安全开发/运维等场景。
 
 接入的[MCP列表](mcp_list.md)
 
